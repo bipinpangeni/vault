@@ -573,230 +573,349 @@
 
 </div>
 
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <script>
-  /* ─── state ─── */
-  let pickedFile  = null;
-  let curCode     = null;
-  let curRetCode  = null;
+/* ══════════════════════════════════════════════════════
+   YOUR KEYS — already configured
+   
+   IMPORTANT — Add your site URL to Dropbox app:
+   1. dropbox.com/developers/apps → vault123
+   2. OAuth 2 → Redirect URIs → add your GitHub Pages URL
+      e.g. https://yourusername.github.io
+   3. Also set Access token expiration = No expiration
+══════════════════════════════════════════════════════ */
+const SUPABASE_URL      = 'https://zptxcmommymnzlzlzaht.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdHhjbW9tbXltbnpsemx6YWh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODE2NzEsImV4cCI6MjA4ODk1NzY3MX0.Z7XmGV8D0eliKan7oNasipcqpvAz7Pk_9J08AZB7O0Y';
+const DROPBOX_TOKEN     = 'sl.u.AGXxRVZ_9UWyHyqS_QCvgax_L7vRKqoM7HZJMSJmEyw8AufIovj3TbqqpOuOnN_8r-7oLnfCZVr3_xFqfgN9R0Xg6rAGBHe-0A5eyoiF7wEcIzuzzEpGXHQ56xciHHFgNGsk-X7PvtN92CUkNIMObn_Khv44vEJhTMraNsj-9T2fsCEE7h0SGpncuOIkHWjtnIZF8ocoRzTFpWxkmzliNvrvP03sVrRyXEtgUpPQJj6BdaDaIEznAjmzMKh1l3OGUCR1hJV25Jk8MNTjfkEVhoWvumO16pcL2Yeit197xJZqBMtLCV0Jeu9caGBVLS6MgrKeasmAdL0lAa4v7BAidaqsQecpdrZQgD7VaKIXRhuaxiwabteF_PQMaq6LChcHKRBiMAMtethGiyw921Qh-SdMBd_-9UjwI66Z9uhBmuC1KSoqCi6gWTR0nAAvQLT0Mk6Oc_HgzEyXziTAqxptXMkvjsimC5Ufei9Bd2sOCDXzPvOmMGe5mAaQfTEB5Icx9Go328aZ_HOcWq35FDliR67lfm6cwIKosdn-Fp-w1-UwVN7rMOVU10cUCzerrnYpsMJP4OLo8BeLIz9IWWn_2wmmfwcFupII022wlpNIbJ__TmknhViyQipIvDfHeatdJ9loGn9q9CQlaFFD9r2oWm8nkx8CrUs3RaJtiVFbiSCPJjDDGbxZjrBDHvc1Hf10-6fiF8BEFWW2ljFXyuCWFdAL5IXw_6v3VzuuTV6KCrfU6_tcnHjMs3v0jdxrQo1mX7anIsqGK997RMbBFKIwcFZbiPNhlSUxY2NrDf1R7aMMqwmYF7TSHp6ofjNRsO0YUgjitdXtPb4R724rNFN-vvEjzJiJRRNwVY3byHq27xAjoQE61GqcZ2NN3mvbxws3LbX6oFJVdJh0woFsSxjFFbUr_qCnTv6B1fp_7C21kmXo3wwBq9TBI2Px9BW6R72CWOx9WNwGEGENEc8W0vr6BWBqmjPKr_br8tqr87oCB35XcnP5Onpmrby-CqFlLEOLMT2LB0Ksfbv_A43bK5kVYWlqjtGSzBAX1w6vqqRBRaOmMvwzWVDLmyZBdxA1_OEsfJmClEXEHDPDFyrziHEhG0gJkGHoXOFinmCQ9iIhMe3-l2LVVd_JCxUqmDB5aVAwH9WWj3nq7OzDCRHPCy5FW1PwPwn9XOGVJ0724gLvhOm8Aajox6l-vb9DmhAhWTjfHZiunSpEfK6rTKfQCZPz3Zdjwu7R0qiP0B2-wciNXLY88AD7rL5nLr_z6zRVIlmlSnghd5lA2fTHEVjWVkGX3l203Yc-NIJUFSPPWaRMa2sltk581A1sWyVMqnE-DCGlh8C8aJyU4XprtRxg423hMZWNbs1SOTCIdC6tK5tSw3WqHsO7SxxsahI7Y4Q6aJnpnFUXp81cWCDjk6T4ENjvzfXSoehZ7J51IjfDmlinx2J6gg';
 
-  /* ─── tabs ─── */
-  function switchTab(t) {
-    document.querySelectorAll('.tab').forEach((b,i) =>
-      b.classList.toggle('on', (i===0&&t==='upload') || (i===1&&t==='retrieve'))
-    );
-    document.getElementById('pUpload').classList.toggle('on', t==='upload');
-    document.getElementById('pRetrieve').classList.toggle('on', t==='retrieve');
-  }
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  /* ─── drag & drop ─── */
-  const dz = document.getElementById('dropZone');
-  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
-  dz.addEventListener('dragleave', ()  => dz.classList.remove('over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('over');
-    if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]);
-  });
-  document.getElementById('fileInput').addEventListener('change', e => {
-    if (e.target.files[0]) pickFile(e.target.files[0]);
-  });
+let pickedFile = null, curCode = null, curRetCode = null;
+const BLOCKED = new Set(['exe','bat','cmd','sh','bash','ps1','msi','dll','vbs','jar','com','scr','reg','pif']);
 
-  /* ─── helpers ─── */
-  function fileIcon(name) {
-    const ext = (name.split('.').pop() || '').toLowerCase();
-    const m = {
-      pdf:'📕', png:'🖼', jpg:'🖼', jpeg:'🖼', gif:'🎨', webp:'🖼', svg:'🎨',
-      mp4:'🎬', mov:'🎬', avi:'🎬', mp3:'🎵', wav:'🎵',
-      zip:'📦', tar:'📦', gz:'📦', rar:'📦', '7z':'📦',
-      doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📊', pptx:'📊',
-      txt:'📄', md:'📄', csv:'📊', json:'⚙', xml:'⚙',
-      py:'🐍', js:'⚡', html:'🌐', css:'🎨'
-    };
-    return m[ext] || '📄';
-  }
+/* ─── tabs ─── */
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i) =>
+    b.classList.toggle('on', (i===0&&t==='upload')||(i===1&&t==='retrieve'))
+  );
+  document.getElementById('pUpload').classList.toggle('on', t==='upload');
+  document.getElementById('pRetrieve').classList.toggle('on', t==='retrieve');
+}
 
-  function fmtBytes(b) {
-    if (b < 1024)       return b + ' B';
-    if (b < 1048576)    return (b/1024).toFixed(1) + ' KB';
-    return (b/1048576).toFixed(2) + ' MB';
-  }
+/* ─── drag & drop ─── */
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) pickFile(e.target.files[0]);
+});
 
-  function showAlert(id, msg, type='err') {
-    const el = document.getElementById(id);
-    el.innerHTML = `<span>${type==='err'?'⚠':'✓'}</span> ${msg}`;
-    el.className = `alert alert-${type==='err'?'err':'ok'} show`;
-  }
-  function hideAlert(id) { document.getElementById(id).classList.remove('show'); }
+/* ─── helpers ─── */
+function fileIcon(name) {
+  const ext = (name.split('.').pop()||'').toLowerCase();
+  const m = {
+    pdf:'📕', png:'🖼', jpg:'🖼', jpeg:'🖼', gif:'🎨', webp:'🖼', svg:'🎨',
+    mp4:'🎬', mov:'🎬', avi:'🎬', mp3:'🎵', wav:'🎵',
+    zip:'📦', tar:'📦', gz:'📦', rar:'📦', '7z':'📦',
+    doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📊', pptx:'📊',
+    txt:'📄', md:'📄', csv:'📊', json:'⚙', xml:'⚙',
+    py:'🐍', js:'⚡', html:'🌐', css:'🎨'
+  };
+  return m[ext] || '📄';
+}
 
-  /* ─── file pick ─── */
-  const BLOCKED = new Set(['exe','bat','cmd','sh','bash','ps1','msi','dll','vbs','jar','com','scr']);
+function fmtBytes(b) {
+  if (b < 1024)    return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
 
-  function pickFile(f) {
-    hideAlert('upErr');
-    const ext = (f.name.split('.').pop()||'').toLowerCase();
-    if (BLOCKED.has(ext)) {
-      showAlert('upErr', `File type .${ext} is blocked for security reasons.`); return;
-    }
-    if (f.size > 50 * 1024 * 1024) {
-      showAlert('upErr', `File too large: ${fmtBytes(f.size)}. Maximum is 50 MB.`); return;
-    }
-    if (f.size === 0) {
-      showAlert('upErr', 'Cannot upload an empty file.'); return;
-    }
-    pickedFile = f;
-    document.getElementById('fIco').textContent  = fileIcon(f.name);
-    document.getElementById('fName').textContent = f.name;
-    document.getElementById('fMeta').textContent = `${fmtBytes(f.size)} · ${f.type || 'Unknown type'}`;
-    document.getElementById('filePreview').classList.add('show');
-    document.getElementById('upBtn').disabled = false;
-  }
+function showAlert(id, msg, type='err') {
+  const el = document.getElementById(id);
+  el.innerHTML = `<span>${type==='err'?'⚠':'✓'}</span> ${msg}`;
+  el.className = `alert alert-${type==='err'?'err':'ok'} show`;
+}
+function hideAlert(id) { document.getElementById(id).classList.remove('show'); }
 
-  function clearFile() {
-    pickedFile = null;
-    document.getElementById('fileInput').value = '';
-    document.getElementById('filePreview').classList.remove('show');
-    document.getElementById('upBtn').disabled = true;
-    hideAlert('upErr');
-  }
+function generateCode() {
+  return Array.from({length:10}, () => Math.floor(Math.random()*10)).join('');
+}
 
-  /* ─── upload (real API) ─── */
-  async function doUpload() {
-    if (!pickedFile) return;
+/* ─── pick file ─── */
+function pickFile(f) {
+  hideAlert('upErr');
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  if (BLOCKED.has(ext)) { showAlert('upErr', `File type .${ext} is blocked for security reasons.`); return; }
+  if (f.size > 150*1024*1024) { showAlert('upErr', `File too large: ${fmtBytes(f.size)}. Maximum is 150 MB.`); return; }
+  if (f.size === 0) { showAlert('upErr', 'Cannot upload an empty file.'); return; }
+  pickedFile = f;
+  document.getElementById('fIco').textContent  = fileIcon(f.name);
+  document.getElementById('fName').textContent = f.name;
+  document.getElementById('fMeta').textContent = `${fmtBytes(f.size)} · ${f.type || 'Unknown type'}`;
+  document.getElementById('filePreview').classList.add('show');
+  document.getElementById('upBtn').disabled = false;
+}
 
-    const btn  = document.getElementById('upBtn');
-    const prog = document.getElementById('prog');
-    const fill = document.getElementById('progFill');
-    const pct  = document.getElementById('progPct');
-    const ptxt = document.getElementById('progTxt');
+function clearFile() {
+  pickedFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('filePreview').classList.remove('show');
+  document.getElementById('upBtn').disabled = true;
+  hideAlert('upErr');
+}
 
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spin"></span> Uploading…';
-    hideAlert('upErr');
-    prog.classList.add('show');
+/* ─── upload: Dropbox + Supabase ─── */
+async function doUpload() {
+  if (!pickedFile) return;
+  const btn  = document.getElementById('upBtn');
+  const fill = document.getElementById('progFill');
+  const pct  = document.getElementById('progPct');
+  const ptxt = document.getElementById('progTxt');
 
-    // Animate progress bar while waiting
-    let fp = 0;
-    const iv = setInterval(() => {
-      fp = Math.min(fp + Math.random() * 12, 88);
-      fill.style.width = fp + '%';
-      pct.textContent  = Math.round(fp) + '%';
-    }, 200);
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Uploading…';
+  hideAlert('upErr');
+  document.getElementById('prog').classList.add('show');
 
-    try {
-      const fd = new FormData();
-      fd.append('file', pickedFile);
+  let fp = 0;
+  const iv = setInterval(() => {
+    fp = Math.min(fp + Math.random()*12, 88);
+    fill.style.width = fp + '%';
+    pct.textContent  = Math.round(fp) + '%';
+  }, 200);
 
-      const res  = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      clearInterval(iv);
-
-      if (!res.ok || !data.success) {
-        prog.classList.remove('show');
-        btn.disabled = false;
-        btn.innerHTML = '<span>⬆</span> Secure Upload';
-        showAlert('upErr', data.error || 'Upload failed. Please try again.');
-        return;
-      }
-
-      fill.style.width = '100%';
-      pct.textContent  = '100%';
-      ptxt.textContent = 'Upload complete!';
-
-      curCode = data.code;
-
-      setTimeout(() => {
-        document.getElementById('genCode').textContent = data.code;
-        document.getElementById('rSub').textContent =
-          `${data.filename} · ${data.size} · Expires in ${data.expires}`;
-        document.getElementById('uploadForm').style.display = 'none';
-        document.getElementById('uploadResult').classList.add('show');
-      }, 400);
-
-    } catch (e) {
-      clearInterval(iv);
-      prog.classList.remove('show');
-      btn.disabled = false;
-      btn.innerHTML = '<span>⬆</span> Secure Upload';
-      showAlert('upErr', 'Network error. Is app.py running?');
-    }
-  }
-
-  function copyCode() {
-    if (!curCode) return;
-    navigator.clipboard.writeText(curCode).then(() => {
-      const b = document.getElementById('cpyBtn');
-      b.textContent = '✓ COPIED'; b.classList.add('ok');
-      setTimeout(() => { b.textContent = 'COPY'; b.classList.remove('ok'); }, 2200);
+  try {
+    // Step 1 — Upload file bytes to Dropbox
+    ptxt.textContent = 'Uploading to Dropbox…';
+    // Quick token check first
+    const authCheck = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${DROPBOX_TOKEN}` },
     });
-  }
-
-  function resetUpload() {
-    pickedFile = null; curCode = null;
-    document.getElementById('fileInput').value = '';
-    document.getElementById('filePreview').classList.remove('show');
-    document.getElementById('prog').classList.remove('show');
-    document.getElementById('progFill').style.width = '0%';
-    document.getElementById('upBtn').disabled = true;
-    document.getElementById('upBtn').innerHTML = '<span>⬆</span> Secure Upload';
-    document.getElementById('uploadForm').style.display = 'block';
-    document.getElementById('uploadResult').classList.remove('show');
-    hideAlert('upErr');
-  }
-
-  /* ─── retrieve (real API) ─── */
-  function onCodeType() {
-    const v = document.getElementById('codeIn').value.replace(/\D/g, '');
-    document.getElementById('codeIn').value = v;
-    document.getElementById('srchBtn').disabled = v.length !== 10;
-    if (v.length < 10) {
-      document.getElementById('fileFound').classList.remove('show');
-      hideAlert('retErr');
+    if (!authCheck.ok) {
+      if (authCheck.status === 401) throw new Error('Dropbox token invalid or expired. Please regenerate at dropbox.com/developers/apps');
+      throw new Error('Dropbox auth failed: ' + authCheck.status);
     }
+    const bytes   = await pickedFile.arrayBuffer();
+    const ext     = pickedFile.name.split('.').pop();
+    const hash    = Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+    const dbxPath = `/vault/${hash}.${ext}`;
+
+    // Upload via Dropbox API (CORS-enabled endpoint)
+    const upResp = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization':   `Bearer ${DROPBOX_TOKEN}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: dbxPath, mode: { '.tag': 'overwrite' }, autorename: false, mute: false, strict_conflict: false }),
+        'Content-Type':    'application/octet-stream',
+      },
+      body: bytes,
+    });
+    if (!upResp.ok) {
+      const raw = await upResp.text();
+      let msg = 'Dropbox error ' + upResp.status;
+      try { const j = JSON.parse(raw); msg = j.error_summary || j.error?.reason?.['.tag'] || msg; } catch(ex) {}
+      if (upResp.status === 401) msg = 'Dropbox token expired. Regenerate token with No Expiration at dropbox.com/developers/apps';
+      if (upResp.status === 409) msg = 'Dropbox path conflict. Try uploading again.';
+      throw new Error(msg);
+    }
+
+    // Step 2 — Create Dropbox shared link
+    ptxt.textContent = 'Creating share link…';
+    let shareUrl = '';
+    try {
+      const linkResp = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${DROPBOX_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: dbxPath, settings: { requested_visibility: { '.tag': 'public' } } }),
+      });
+      const linkData = await linkResp.json();
+      if (linkResp.ok) {
+        shareUrl = linkData.url.replace('?dl=0','?dl=1').replace('www.dropbox.com','dl.dropboxusercontent.com');
+      } else if (linkData.error?.['.tag'] === 'shared_link_already_exists') {
+        // Link already exists — fetch it
+        const listResp = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${DROPBOX_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: dbxPath, direct_only: true }),
+        });
+        const listData = await listResp.json();
+        shareUrl = listData.links[0].url.replace('?dl=0','?dl=1').replace('www.dropbox.com','dl.dropboxusercontent.com');
+      } else {
+        throw new Error('Could not create share link: ' + (linkData.error_summary || 'unknown'));
+      }
+    } catch(linkErr) {
+      throw new Error('Share link failed: ' + linkErr.message);
+    }
+
+    // Step 3 — Save metadata to Supabase
+    ptxt.textContent = 'Saving to Supabase…';
+    let code = generateCode();
+    for (let i = 0; i < 5; i++) {
+      const { data } = await sb.from('files').select('id').eq('code', code);
+      if (!data || data.length === 0) break;
+      code = generateCode();
+    }
+
+    const { error: dbErr } = await sb.from('files').insert({
+      code,
+      original_filename: pickedFile.name,
+      stored_filename:   `${hash}.${ext}`,
+      dropbox_path:      dbxPath,
+      share_url:         shareUrl,
+      file_size:         pickedFile.size,
+      file_type:         pickedFile.type || 'application/octet-stream',
+      expiry_time:       new Date(Date.now() + 24*60*60*1000).toISOString(),
+      downloaded:        false,
+      is_active:         true,
+    });
+    if (dbErr) throw new Error('Database error: ' + dbErr.message);
+
+    // Done!
+    clearInterval(iv);
+    fill.style.width = '100%';
+    pct.textContent  = '100%';
+    ptxt.textContent = 'Upload complete!';
+    curCode = code;
+
+    setTimeout(() => {
+      document.getElementById('genCode').textContent = code;
+      document.getElementById('rSub').textContent =
+        `${pickedFile.name} · ${fmtBytes(pickedFile.size)} · Expires in 24 hours`;
+      document.getElementById('uploadForm').style.display = 'none';
+      document.getElementById('uploadResult').classList.add('show');
+      document.getElementById('prog').classList.remove('show');
+    }, 400);
+
+  } catch(e) {
+    clearInterval(iv);
+    document.getElementById('prog').classList.remove('show');
+    btn.disabled = false;
+    btn.innerHTML = '<span>⬆</span> Secure Upload';
+    showAlert('upErr', e.message || 'Upload failed. Please try again.');
   }
+}
 
-  async function doSearch() {
-    const code = document.getElementById('codeIn').value.trim();
-    if (code.length !== 10) return;
+/* ─── copy code ─── */
+function copyCode() {
+  if (!curCode) return;
+  navigator.clipboard.writeText(curCode).then(() => {
+    const b = document.getElementById('cpyBtn');
+    b.textContent = '✓ COPIED'; b.classList.add('ok');
+    setTimeout(() => { b.textContent = 'COPY'; b.classList.remove('ok'); }, 2200);
+  });
+}
 
-    const btn = document.getElementById('srchBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spin" style="border-top-color:#0a0a0b"></span>';
+/* ─── reset upload ─── */
+function resetUpload() {
+  pickedFile = null; curCode = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('filePreview').classList.remove('show');
+  document.getElementById('prog').classList.remove('show');
+  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('upBtn').disabled = true;
+  document.getElementById('upBtn').innerHTML = '<span>⬆</span> Secure Upload';
+  document.getElementById('uploadForm').style.display = 'block';
+  document.getElementById('uploadResult').classList.remove('show');
+  hideAlert('upErr');
+}
+
+/* ─── retrieve: code input ─── */
+function onCodeType() {
+  const v = document.getElementById('codeIn').value.replace(/\D/g,'');
+  document.getElementById('codeIn').value = v;
+  document.getElementById('srchBtn').disabled = v.length !== 10;
+  if (v.length < 10) {
     document.getElementById('fileFound').classList.remove('show');
     hideAlert('retErr');
-
-    try {
-      const res  = await fetch(`/api/retrieve/${code}`);
-      const data = await res.json();
-      btn.disabled = false; btn.textContent = 'SEARCH';
-
-      if (!res.ok || !data.success) {
-        showAlert('retErr', data.error || 'File not found. Please check your code.');
-        return;
-      }
-
-      curRetCode = code;
-      document.getElementById('foundIco').textContent  = fileIcon(data.filename);
-      document.getElementById('foundName').textContent = data.filename;
-      document.getElementById('foundSize').textContent = data.size;
-      document.getElementById('foundDate').textContent = data.uploaded;
-      document.getElementById('foundType').textContent = data.file_type;
-      document.getElementById('fileFound').classList.add('show');
-
-    } catch (e) {
-      btn.disabled = false; btn.textContent = 'SEARCH';
-      showAlert('retErr', 'Network error. Is app.py running?');
-    }
   }
+}
 
-  async function doDownload() {
-    if (!curRetCode) return;
+/* ─── search: Supabase lookup ─── */
+async function doSearch() {
+  const code = document.getElementById('codeIn').value.trim();
+  if (code.length !== 10) return;
 
-    const btn = document.getElementById('dlBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spin" style="border-top-color:#0a0a0b"></span> Downloading…';
+  const btn = document.getElementById('srchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin" style="border-top-color:#0a0a0b"></span>';
+  document.getElementById('fileFound').classList.remove('show');
+  hideAlert('retErr');
 
-    // Trigger download via hidden link
+  try {
+    const { data, error } = await sb
+      .from('files').select('*').eq('code', code).eq('is_active', true).single();
+
+    btn.disabled = false; btn.textContent = 'SEARCH';
+
+    if (error || !data) {
+      showAlert('retErr', 'File not found. Please check your code.'); return;
+    }
+    if (new Date() > new Date(data.expiry_time)) {
+      await sb.from('files').update({ is_active: false }).eq('code', code);
+      showAlert('retErr', 'This file has expired and is no longer available.'); return;
+    }
+    if (data.downloaded) {
+      showAlert('retErr', 'This file has already been downloaded and is no longer available.'); return;
+    }
+
+    curRetCode = code;
+    document.getElementById('foundIco').textContent  = fileIcon(data.original_filename);
+    document.getElementById('foundName').textContent = data.original_filename;
+    document.getElementById('foundSize').textContent = fmtBytes(data.file_size);
+    document.getElementById('foundDate').textContent = data.created_at?.slice(0,10) || '—';
+    document.getElementById('foundType').textContent = data.file_type || 'Unknown';
+    document.getElementById('fileFound').classList.add('show');
+
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'SEARCH';
+    showAlert('retErr', 'Connection error. Please try again.');
+  }
+}
+
+/* ─── download: Dropbox + mark deleted ─── */
+async function doDownload() {
+  if (!curRetCode) return;
+
+  const btn = document.getElementById('dlBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin" style="border-top-color:#0a0a0b"></span> Downloading…';
+
+  try {
+    const { data } = await sb.from('files').select('*').eq('code', curRetCode).single();
+    if (!data) {
+      showAlert('retErr', 'File not found.');
+      btn.disabled = false; btn.innerHTML = '<span>⬇</span> Download File'; return;
+    }
+
+    // Mark as downloaded in Supabase
+    await sb.from('files').update({
+      downloaded:    true,
+      is_active:     false,
+      download_time: new Date().toISOString(),
+    }).eq('code', curRetCode);
+
+    // Delete file from Dropbox
+    await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DROPBOX_TOKEN}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({ path: data.dropbox_path }),
+    });
+
+    // Trigger browser download
     const a = document.createElement('a');
-    a.href = `/api/download/${curRetCode}`;
+    a.href = data.share_url; a.target = '_blank';
     a.style.display = 'none';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
 
@@ -805,9 +924,15 @@
       document.getElementById('codeIn').value = '';
       document.getElementById('srchBtn').disabled = true;
       curRetCode = null;
-      showAlert('retErr', 'Download started! File permanently deleted from server.', 'ok');
+      showAlert('retErr', 'Download started! This file is now permanently deleted from our servers.', 'ok');
     }, 1200);
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⬇</span> Download File';
+    showAlert('retErr', 'Download failed. Please try again.');
   }
+}
 </script>
 </body>
 </html>
