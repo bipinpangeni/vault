@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-bg: #fafaf8;
+  --color-bg2: #f0ede6;
+  --color-surface: #ffffff;
+  --color-border: #e5e0d8;
+  --color-text: #1a1814;
+  --color-text2: #6b6560;
+  --color-text3: #9e9890;
+  --color-accent: #c8531a;
+  --color-accent2: #e8b89a;
+  --color-accent-light: #fdf0e8;
+  --color-success: #2d7a4f;
+  --color-danger: #c0392b;
+}
+
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .prose {
+    @apply max-w-none;
+  }
+  
+  .prose h1, .prose h2, .prose h3, .prose h4 {
+    @apply font-serif font-bold text-text;
+  }
+  
+  .prose p {
+    @apply text-text leading-relaxed;
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-accent bg-accent-light px-6 py-4 italic text-text2 rounded-r-lg;
+  }
+  
+  .prose code {
+    @apply bg-bg2 px-1.5 py-0.5 rounded text-accent font-mono text-sm;
+  }
+}
